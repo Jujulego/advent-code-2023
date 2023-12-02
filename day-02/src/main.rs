@@ -1,6 +1,7 @@
 mod input;
 mod game;
 
+use std::cmp::max;
 use itertools::Itertools;
 use input::INPUT;
 use crate::game::Game;
@@ -9,16 +10,25 @@ fn main() {
     let mut sum = 0;
 
     for line in INPUT {
-        let (id, games) = line.split(':').collect_tuple().unwrap();
-        let id = dbg!(id[5..].parse::<u32>().unwrap());
+        let (_, games) = line.split(':').collect_tuple().unwrap();
 
-        let all_valid = games.split(';')
-            .map(|game| game.parse::<Game>().unwrap())
-            .all(|game| game.is_valid());
+        let mut minimal = Game {
+            red: 0,
+            green: 0,
+            blue: 0,
+        };
 
-        if all_valid {
-            sum = sum + id;
+        let games = games.split(';')
+            .map(|game| game.parse::<Game>().unwrap());
+
+        for game in games {
+            minimal.red = max(minimal.red, game.red);
+            minimal.green = max(minimal.green, game.green);
+            minimal.blue = max(minimal.blue, game.blue);
         }
+
+        dbg!(&minimal);
+        sum = sum + (minimal.red * minimal.green * minimal.blue);
     }
 
     println!("{sum}");
