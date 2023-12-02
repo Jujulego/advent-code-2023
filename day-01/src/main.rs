@@ -2,88 +2,57 @@ mod input;
 
 use input::INPUT;
 
-fn first_digit(line: &str) -> u32 {
-    let mut i = 0;
+const DIGITS: [(&str, u32); 9] = [
+    ("one", 1),
+    ("two", 2),
+    ("three", 3),
+    ("four", 4),
+    ("five", 5),
+    ("six", 6),
+    ("seven", 7),
+    ("eight", 8),
+    ("nine", 9),
+];
 
-    while i < line.len() {
-        match line[i..i + 1].parse::<u32>() {
-            Ok(d) => return d,
-            _ => {
-                let slice = &line[i..];
-
-                if slice.starts_with("one") {
-                    return 1;
-                } else if slice.starts_with("two") {
-                    return 2;
-                } else if slice.starts_with("three") {
-                    return 3;
-                } else if slice.starts_with("four") {
-                    return 4;
-                } else if slice.starts_with("five") {
-                    return 5;
-                } else if slice.starts_with("six") {
-                    return 6;
-                } else if slice.starts_with("seven") {
-                    return 7;
-                } else if slice.starts_with("eight") {
-                    return 8;
-                } else if slice.starts_with("nine") {
-                    return 9;
-                }
-            }
-        }
-
-        i = i + 1;
+fn starts_with_digit(str: &str) -> Option<u32> {
+    // Simple digit
+    if let Ok(d) = str[..1].parse::<u32>() {
+        return Some(d);
     }
 
-    return 0;
+    // Full letter digit
+    if let Some((_, val)) = DIGITS.iter().find(|(txt, _)| str.starts_with(txt)) {
+        return Some(*val)
+    }
+
+    None
 }
 
-fn last_digit(line: &str) -> u32 {
-    let mut i = line.len();
-
-    while i > 0 {
-        match line[i - 1..i].parse::<u32>() {
-            Ok(d) => return d,
-            _ => {
-                let slice = &line[..i];
-
-                if slice.ends_with("one") {
-                    return 1;
-                } else if slice.ends_with("two") {
-                    return 2;
-                } else if slice.ends_with("three") {
-                    return 3;
-                } else if slice.ends_with("four") {
-                    return 4;
-                } else if slice.ends_with("five") {
-                    return 5;
-                } else if slice.ends_with("six") {
-                    return 6;
-                } else if slice.ends_with("seven") {
-                    return 7;
-                } else if slice.ends_with("eight") {
-                    return 8;
-                } else if slice.ends_with("nine") {
-                    return 9;
-                }
-            }
-        }
-
-        i = i - 1;
+fn ends_with_digit(str: &str) -> Option<u32> {
+    // Simple digit
+    if let Ok(d) = str[str.len() - 1..].parse::<u32>() {
+        return Some(d);
     }
 
-    return 0;
+    // Full letter digit
+    if let Some((_, val)) = DIGITS.iter().find(|(txt, _)| str.ends_with(txt)) {
+        return Some(*val)
+    }
+
+    None
 }
 
 fn main() {
     let mut sum = 0;
 
     for line in INPUT {
-        let first = first_digit(line);
-        let last = last_digit(line);
+        let first = (0..line.len())
+            .find_map(|idx| starts_with_digit(&line[idx..])).unwrap();
 
-        sum += dbg!(first * 10 + last);
+        let last = (1..=line.len()).rev()
+            .find_map(|idx| ends_with_digit(&line[..idx])).unwrap();
+
+        sum += first * 10 + last;
     }
 
     println!("{sum}");
