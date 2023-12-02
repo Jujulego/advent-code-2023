@@ -1,15 +1,23 @@
-mod input;
 mod game;
 
 use std::cmp::max;
 use itertools::Itertools;
-use input::INPUT;
 use crate::game::Game;
+
+macro_rules! read_lines {
+    ($file:literal) => {
+        {
+            let file = std::fs::File::open($file).expect(&format!("error opening file {}", $file));
+            let buffer = std::io::BufReader::new(file);
+            std::io::BufRead::lines(buffer).map(|line| line.unwrap())
+        }
+    };
+}
 
 fn main() {
     let mut sum = 0;
 
-    for line in INPUT {
+    for line in read_lines!("day-02/input.txt") {
         let (_, games) = line.split(':').collect_tuple().unwrap();
 
         let mut minimal = Game {
@@ -27,7 +35,6 @@ fn main() {
             minimal.blue = max(minimal.blue, game.blue);
         }
 
-        dbg!(&minimal);
         sum = sum + (minimal.red * minimal.green * minimal.blue);
     }
 

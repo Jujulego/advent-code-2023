@@ -1,7 +1,3 @@
-mod input;
-
-use input::INPUT;
-
 const DIGITS: [(&str, u32); 9] = [
     ("one", 1),
     ("two", 2),
@@ -42,10 +38,20 @@ fn ends_with_digit(str: &str) -> Option<u32> {
     None
 }
 
+macro_rules! read_lines {
+    ($file:literal) => {
+        {
+            let file = std::fs::File::open($file).expect(&format!("error opening file {}", $file));
+            let buffer = std::io::BufReader::new(file);
+            std::io::BufRead::lines(buffer).map(|line| line.unwrap())
+        }
+    };
+}
+
 fn main() {
     let mut sum = 0;
 
-    for line in INPUT {
+    for line in read_lines!("day-01/input.txt") {
         let first = (0..line.len())
             .find_map(|idx| starts_with_digit(&line[idx..])).unwrap();
 
