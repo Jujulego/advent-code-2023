@@ -4,7 +4,8 @@ extern crate pythagore as py;
 mod quadtree;
 mod number;
 
-use na::point;
+use std::collections::HashMap;
+use na::{point, Point2};
 use crate::number::Number;
 use crate::quadtree::Quadtree;
 
@@ -54,7 +55,7 @@ fn main() {
                     },
                 }
             } else {
-                symbols.insert(point![x, y])
+                symbols.insert(point![x, y], c)
             }
         }
 
@@ -65,13 +66,34 @@ fn main() {
         y += 1;
     }
 
-    let mut sum = 0;
+    let mut gears: HashMap<Point2<i32>, Vec<u32>> = HashMap::new();
+    let mut part1 = 0;
 
     for n in numbers {
-        if symbols.query(&n.surroundings()).next().is_some() {
-            sum += n.value;
+        let mut once = false;
+
+        for (pos, symbol) in symbols.query(&n.surroundings()) {
+            if !once {
+                once = true;
+                part1 += n.value;
+            }
+
+            if symbol == &'*' {
+                if let Some(item) = gears.get_mut(pos) {
+                    item.push(n.value);
+                } else {
+                    gears.insert(*pos, vec![n.value]);
+                }
+            }
         }
     }
 
-    println!("{sum}");
+    let mut part2 = 0;
+
+    for vals in gears.values().filter(|v| v.len() > 1) {
+        part2 += vals.iter().copied().reduce(|acc, v| acc * v).unwrap();
+    }
+
+    println!("part 1: {part1}");
+    println!("part 2: {part2}");
 }

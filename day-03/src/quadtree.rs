@@ -1,4 +1,5 @@
 use std::fmt::Debug;
+use std::marker::PhantomData;
 use na::Point2;
 use py::{Holds, Overlaps};
 use crate::quadtree::binary_square::BinarySquare;
@@ -19,38 +20,40 @@ mod tree;
 
 /// Quadtree wrapper
 #[derive(Clone, Debug)]
-pub struct Quadtree<N: Node> {
+pub struct Quadtree<D: Clone + Eq, N: Node<D>> {
     root: N,
+    phantom: PhantomData<D>
 }
 
-impl<N: Node> Quadtree<N> {
+impl<D: Clone + Eq, N: Node<D>> Quadtree<D, N> {
     #[inline]
     pub fn has(&self, point: &Point2<i32>) -> bool {
         self.root.has(point)
     }
 
     #[inline]
-    pub fn iter(&self) -> Iter<'_> {
+    pub fn iter(&self) -> Iter<'_, D> {
         Iter::new(&self.root)
     }
 }
 
-pub type GlobalQuadtree = Quadtree<GlobalNode>;
+pub type GlobalQuadtree<D> = Quadtree<D, GlobalNode<D>>;
 
-impl Quadtree<GlobalNode> {
-    pub fn new() -> Quadtree<GlobalNode> {
+impl<D: Clone + Eq> Quadtree<D, GlobalNode<D>> {
+    pub fn new() -> Quadtree<D, GlobalNode<D>> {
         Quadtree {
             root: GlobalNode::new(),
+            phantom: PhantomData::default()
         }
     }
 
-    pub fn query<B: Clone + Holds<Point2<i32>> + Overlaps<BinarySquare>>(&self, bbox: &B) -> Query<B> {
+    pub fn query<B: Clone + Holds<Point2<i32>> + Overlaps<BinarySquare>>(&self, bbox: &B) -> Query<B, D> {
         Query::new(bbox, &self.root)
     }
 
     #[inline]
-    pub fn insert(&mut self, point: Point2<i32>) {
-        self.root.insert(Tree::Leaf(point), &BinarySquare::wrapping(point));
+    pub fn insert(&mut self, point: Point2<i32>, data: D) {
+        self.root.insert(Tree::Leaf(point, data), &BinarySquare::wrapping(point));
     }
 
     #[inline]
@@ -60,16 +63,16 @@ impl Quadtree<GlobalNode> {
 }
 
 // Utils
-impl Default for Quadtree<GlobalNode> {
+impl<D: Clone + Eq> Default for Quadtree<D, GlobalNode<D>> {
     #[inline]
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl<'a, N: Node> IntoIterator for &'a Quadtree<N> {
-    type Item = &'a Point2<i32>;
-    type IntoIter = Iter<'a>;
+impl<'a, D: Clone + Eq, N: Node<D>> IntoIterator for &'a Quadtree<D, N> {
+    type Item = (&'a Point2<i32>, &'a D);
+    type IntoIter = Iter<'a, D>;
 
     #[inline]
     fn into_iter(self) -> Self::IntoIter {
@@ -88,9 +91,9 @@ mod tests {
     fn test_has_point() {
         // Initiate tree
         let mut tree = Quadtree::default();
-        tree.insert(point![3, 1]);
-        tree.insert(point![3, 3]);
-        tree.insert(point![3, 5]);
+        tree.insert(point![3, 1], 1);
+        tree.insert(point![3, 3], 2);
+        tree.insert(point![3, 5], 3);
 
         // Inserted points
         assert!(tree.has(&point![3, 1]));
@@ -106,16 +109,16 @@ mod tests {
     fn test_iterator() {
         // Initiate tree
         let mut tree = Quadtree::default();
-        tree.insert(point![3, 1]);
-        tree.insert(point![3, 3]);
-        tree.insert(point![3, 5]);
+        tree.insert(point![3, 1], 1);
+        tree.insert(point![3, 3], 2);
+        tree.insert(point![3, 5], 3);
 
         // Inserted points
         let mut iter = tree.iter();
 
-        assert_eq!(iter.next(), Some(&point![3, 5]));
-        assert_eq!(iter.next(), Some(&point![3, 3]));
-        assert_eq!(iter.next(), Some(&point![3, 1]));
+        assert_eq!(iter.next(), Some((&point![3, 5], &1)));
+        assert_eq!(iter.next(), Some((&point![3, 3], &2)));
+        assert_eq!(iter.next(), Some((&point![3, 1], &3)));
         assert_eq!(iter.next(), None);
     }
 
@@ -132,7 +135,7 @@ mod tests {
         );
 
         // Insert a point
-        tree.insert(point![3, 1]);
+        tree.insert(point![3, 1], 1);
 
         assert_eq!(
             tree.root,
@@ -141,13 +144,13 @@ mod tests {
                     Tree::Empty,
                     Tree::Empty,
                     Tree::Empty,
-                    Tree::Leaf(point![3, 1])
+                    Tree::Leaf(point![3, 1], 1)
                 ]
             }
         );
 
         // Create a middle node
-        tree.insert(point![1, 3]);
+        tree.insert(point![1, 3], 2);
 
         assert_eq!(
             tree.root,
@@ -160,8 +163,8 @@ mod tests {
                         area: BinarySquare { anchor: point![0, 0], size: 4 },
                         children: [
                             Tree::Empty,
-                            Tree::Leaf(point![1, 3]),
-                            Tree::Leaf(point![3, 1]),
+                            Tree::Leaf(point![1, 3], 2),
+                            Tree::Leaf(point![3, 1], 1),
                             Tree::Empty
                         ]
                     }))
@@ -170,7 +173,7 @@ mod tests {
         );
 
         // Insert in middle node
-        tree.insert(point![3, 3]);
+        tree.insert(point![3, 3], 3);
 
         assert_eq!(
             tree.root,
@@ -183,9 +186,9 @@ mod tests {
                         area: BinarySquare { anchor: point![0, 0], size: 4 },
                         children: [
                             Tree::Empty,
-                            Tree::Leaf(point![1, 3]),
-                            Tree::Leaf(point![3, 1]),
-                            Tree::Leaf(point![3, 3]),
+                            Tree::Leaf(point![1, 3], 2),
+                            Tree::Leaf(point![3, 1], 1),
+                            Tree::Leaf(point![3, 3], 3),
                         ]
                     }))
                 ]
@@ -193,7 +196,7 @@ mod tests {
         );
 
         // Move the middle node deeper
-        tree.insert(point![3, 5]);
+        tree.insert(point![3, 5], 4);
 
         assert_eq!(
             tree.root,
@@ -209,12 +212,12 @@ mod tests {
                                 area: BinarySquare { anchor: point![0, 0], size: 4 },
                                 children: [
                                     Tree::Empty,
-                                    Tree::Leaf(point![1, 3]),
-                                    Tree::Leaf(point![3, 1]),
-                                    Tree::Leaf(point![3, 3]),
+                                    Tree::Leaf(point![1, 3], 2),
+                                    Tree::Leaf(point![3, 1], 1),
+                                    Tree::Leaf(point![3, 3], 3),
                                 ]
                             })),
-                            Tree::Leaf(point![3, 5]),
+                            Tree::Leaf(point![3, 5], 4),
                             Tree::Empty,
                             Tree::Empty,
                         ],
@@ -237,7 +240,7 @@ mod tests {
         );
 
         // Insert a point
-        tree.insert(point![3, 1]);
+        tree.insert(point![3, 1], 1);
 
         assert_eq!(
             tree.root,
@@ -246,13 +249,13 @@ mod tests {
                     Tree::Empty,
                     Tree::Empty,
                     Tree::Empty,
-                    Tree::Leaf(point![3, 1]),
+                    Tree::Leaf(point![3, 1], 1),
                 ]
             }
         );
 
         // Insert again point
-        tree.insert(point![3, 1]);
+        tree.insert(point![3, 1], 2);
 
         assert_eq!(
             tree.root,
@@ -261,7 +264,7 @@ mod tests {
                     Tree::Empty,
                     Tree::Empty,
                     Tree::Empty,
-                    Tree::Leaf(point![3, 1]),
+                    Tree::Leaf(point![3, 1], 2),
                 ]
             }
         );
@@ -271,10 +274,10 @@ mod tests {
     fn test_remove_point() {
         // Initiate tree
         let mut tree = Quadtree::default();
-        tree.insert(point![3, 1]);
-        tree.insert(point![3, 3]);
-        tree.insert(point![1, 3]);
-        tree.insert(point![3, 5]);
+        tree.insert(point![3, 1], 1);
+        tree.insert(point![3, 3], 2);
+        tree.insert(point![1, 3], 3);
+        tree.insert(point![3, 5], 4);
 
         // Remove point
         tree.remove(&point![3, 3]);
@@ -293,12 +296,12 @@ mod tests {
                                 area: BinarySquare { anchor: point![0, 0], size: 4 },
                                 children: [
                                     Tree::Empty,
-                                    Tree::Leaf(point![1, 3]),
-                                    Tree::Leaf(point![3, 1]),
+                                    Tree::Leaf(point![1, 3], 3),
+                                    Tree::Leaf(point![3, 1], 1),
                                     Tree::Empty
                                 ]
                             })),
-                            Tree::Leaf(point![3, 5]),
+                            Tree::Leaf(point![3, 5], 4),
                             Tree::Empty,
                             Tree::Empty,
                         ],
@@ -321,8 +324,8 @@ mod tests {
                         area: BinarySquare { anchor: point![0, 0], size: 4 },
                         children: [
                             Tree::Empty,
-                            Tree::Leaf(point![1, 3]),
-                            Tree::Leaf(point![3, 1]),
+                            Tree::Leaf(point![1, 3], 3),
+                            Tree::Leaf(point![3, 1], 1),
                             Tree::Empty
                         ]
                     })),
@@ -340,7 +343,7 @@ mod tests {
                     Tree::Empty,
                     Tree::Empty,
                     Tree::Empty,
-                    Tree::Leaf(point![3, 1]),
+                    Tree::Leaf(point![3, 1], 1),
                 ]
             }
         );
