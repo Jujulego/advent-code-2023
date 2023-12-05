@@ -51,8 +51,6 @@ fn map_ranges(map: &Vec<Mapping>, ranges: Vec<Range<u64>>) -> Vec<Range<u64>> {
         result.push(range);
     }
 
-    result.sort_by_key(|r| r.start);
-
     result
 }
 
@@ -92,8 +90,6 @@ fn main() {
         ranges.push(*start..(start + len))
     }
 
-    ranges.sort_by_key(|r| r.start);
-
     // Search closest location
     let mut closest = u64::MAX;
 
@@ -109,7 +105,7 @@ fn main() {
 
     // Compute location ranges
     let location = maps.iter().fold(ranges, |acc, map| map_ranges(map, acc));
-    let closest = location[0].start;
+    let closest = location.iter().map(|r| r.start).min().unwrap();
 
     println!("part 2: {closest}")
 }
