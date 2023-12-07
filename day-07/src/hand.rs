@@ -47,8 +47,14 @@ impl PartialOrd for Hand {
 impl Hand {
     pub fn hand_type(&self) -> HandType {
         let mut counts: BTreeMap<Card, u8> = BTreeMap::new();
+        let mut jokers = 0;
 
         for card in self.cards {
+            if card == Card::Joker {
+                jokers += 1;
+                continue;
+            }
+
             if let Some(item) = counts.get_mut(&card) {
                 *item += 1;
             } else {
@@ -56,8 +62,16 @@ impl Hand {
             }
         }
 
+        counts.iter_mut()
+            .filter(|(card, _)| *card != &Card::Joker)
+            .for_each(|(_, cnt)| *cnt += jokers);
+
         let mut values = counts.values().collect::<Vec<&u8>>();
         values.sort_by(|a, b| b.cmp(a));
+
+        if values.is_empty() {
+            return HandType::FiveOfAKind; // of jokers
+        }
 
         match (values.len(), values[0]) {
             (1, 5) => HandType::FiveOfAKind,
