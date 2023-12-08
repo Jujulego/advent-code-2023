@@ -25,10 +25,14 @@ fn main() {
     let mut lines = read_lines!("day-06/input.txt");
 
     let durations = lines.next().unwrap();
-    let durations = durations[10..].split(' ').filter(|&s| !s.is_empty()).map(|n| u64::from_str_radix(n, 10).unwrap());
+    let durations = durations[10..].split(' ')
+        .filter(|&s| !s.is_empty())
+        .map(|n| u64::from_str_radix(n, 10).unwrap());
 
     let distances = lines.next().unwrap();
-    let distances = distances[10..].split(' ').filter(|&s| !s.is_empty()).map(|n| u64::from_str_radix(n, 10).unwrap());
+    let distances = distances[10..].split(' ')
+        .filter(|&s| !s.is_empty())
+        .map(|n| u64::from_str_radix(n, 10).unwrap());
 
     let mut part1 = 1;
 

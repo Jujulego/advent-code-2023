@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 
 macro_rules! read_lines {
     ($file:literal) => {
@@ -11,7 +11,7 @@ macro_rules! read_lines {
 }
 
 fn main() {
-    let mut scratchcards: HashMap<u32, u32> = HashMap::new();
+    let mut scratchcards: BTreeMap<u32, u32> = BTreeMap::new();
     let mut current_card = 1;
     let mut part1 = 0;
 

@@ -103,9 +103,30 @@ fn main() {
 
     println!("part 1: {closest}");
 
+    let mut closest = u64::MAX;
+    let mut cnt = 0;
+
+    for range in ranges.clone() {
+        for seed in range {
+            let location = maps.iter().fold(seed, |acc, map| map_val(map, acc));
+
+            if location < closest {
+                closest = location;
+            }
+
+            cnt += 1;
+
+            if (cnt % 10000) == 0 {
+                println!("Handled {cnt} seeds (min {closest})");
+            }
+        }
+    }
+
+    println!("part 2: {closest}");
+
     // Compute location ranges
     let location = maps.iter().fold(ranges, |acc, map| map_ranges(map, acc));
     let closest = location.iter().map(|r| r.start).min().unwrap();
 
-    println!("part 2: {closest}")
+    println!("part 2: {closest}");
 }
