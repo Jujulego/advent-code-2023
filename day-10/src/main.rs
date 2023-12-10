@@ -1,6 +1,6 @@
 use std::cmp::max;
 use std::collections::{HashMap, VecDeque};
-use na::{point, Point2, vector};
+use na::{point, Point2, vector, Vector2};
 use py::{BBox, Holds};
 use num_traits::FromPrimitive;
 use crate::pipe::{DOWN, LEFT, Pipe, RIGHT, UP};
@@ -20,6 +20,12 @@ macro_rules! read_lines {
             std::io::BufRead::lines(buffer).map(|line| line.unwrap())
         }
     };
+}
+
+const MOVES: [(Vector2<i16>, u8); 4] = [(vector![-1, 0], LEFT), (vector![0, -1], UP), (vector![1, 0], RIGHT), (vector![0, 1], DOWN)];
+
+fn opposite_dir(dir: u8) -> u8 {
+    dir >> 2 | ((dir << 2) % 16)
 }
 
 fn main() {
@@ -57,39 +63,86 @@ fn main() {
     let start = start.unwrap();
     let bbox = BBox::from_points(&point![0, 0], &point![map[0].len() as i16, map.len() as i16]);
 
-    let pipe = [(vector![-1, 0], RIGHT), (vector![0, -1], DOWN), (vector![1, 0], LEFT), (vector![0, 1], UP)].iter()
+    let pipe = MOVES.iter()
         .map(|(mvt, dir)| (start + mvt, dir))
-        .filter(|(pos, &dir)| bbox.holds(pos) && (map[pos.y as usize][pos.x as usize] as u8 & dir == dir))
-        .map(|(_, dir)| dir >> 2 | ((dir << 2) % 16))
+        .filter(|(pos, &dir)| bbox.holds(pos) && (map[pos.y as usize][pos.x as usize] as u8 & opposite_dir(dir) != 0))
+        .map(|(_, dir)| *dir)
         .reduce(|acc, d| acc | d).unwrap();
 
     map[start.y as usize][start.x as usize] = Pipe::from_u8(pipe).unwrap();
 
     // Move in pipes
-    let mut values = HashMap::new();
+    let mut pipe_loop = HashMap::new();
     let mut queue = VecDeque::new();
     let mut farthest = 0;
 
-    values.insert(start, 0);
+    pipe_loop.insert(start, 0);
     queue.push_front(start);
 
     while !queue.is_empty() {
         let pos = queue.pop_front().unwrap();
         let pipe = map[pos.y as usize][pos.x as usize];
-        let dist = *values.get(&pos).unwrap();
+        let dist = *pipe_loop.get(&pos).unwrap();
 
-        let neighbors: Vec<Point2<i16>> = [(vector![-1, 0], LEFT), (vector![0, -1], UP), (vector![1, 0], RIGHT), (vector![0, 1], DOWN)].iter()
+        let neighbors: Vec<Point2<i16>> = MOVES.iter()
             .filter(|(_, dir)| pipe as u8 & dir == *dir)
             .map(|(mvt, _)| pos + mvt)
-            .filter(|next| !values.contains_key(next))
+            .filter(|next| !pipe_loop.contains_key(next))
             .collect();
 
         for next in neighbors {
             farthest = max(farthest, dist + 1);
-            values.insert(next, dist + 1);
+            pipe_loop.insert(next, dist + 1);
             queue.push_back(next);
         }
     }
 
     println!("part 1: {farthest}");
+
+    // Evaluate in/out
+    let mut cnt_in = 0;
+
+    for (y, row) in map.iter().enumerate() {
+        let y = y as i16;
+
+        let mut is_in = false;
+        let mut pipe_sum = 0;
+
+        for (x, &pipe) in row.iter().enumerate() {
+            let x = x as i16;
+            let is_pipe = pipe_loop.contains_key(&point![x, y]);
+
+            if is_pipe {
+                pipe_sum |= pipe as u8;
+
+                print!("{}", match pipe {
+                    Pipe::None => ".",
+                    Pipe::Horizontal => "─",
+                    Pipe::Vertical => "│",
+                    Pipe::UpLeft => "┘",
+                    Pipe::UpRight => "└",
+                    Pipe::DownLeft => "┐",
+                    Pipe::DownRight => "┌",
+                });
+
+                if pipe as u8 & RIGHT == 0 {
+                    if (pipe_sum & UP == UP) && (pipe_sum & DOWN == DOWN) {
+                        is_in = !is_in;
+                    }
+
+                    pipe_sum = 0;
+                }
+            } else {
+                if is_in {
+                    cnt_in += 1;
+                }
+
+                print!("{}", if is_in { "\x1b[32mx\x1b[m" } else { "\x1b[34mo\x1b[m" });
+            }
+        }
+
+        println!();
+    }
+
+    println!("part 2: {cnt_in}");
 }
