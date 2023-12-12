@@ -1,5 +1,6 @@
 use crate::spring_generator::SpringGenerator;
 use crate::spring_pattern::SpringPattern;
+use crate::spring_state::SpringState::{*};
 
 mod spring_pattern;
 mod spring_state;
@@ -15,6 +16,37 @@ macro_rules! read_lines {
     };
 }
 
+fn simplify(mut pattern: SpringPattern, groups: &Vec<u16>) -> SpringPattern {
+    let mut idx = 0;
+    let mut group_idx = 0;
+
+    while idx < pattern.len() {
+        match pattern[idx] {
+            Damaged => {
+                let start = idx;
+                let group_size = groups[group_idx] as usize;
+
+                while idx < start + group_size {
+                    pattern[idx] = Damaged;
+                    idx += 1;
+                }
+
+                if idx < pattern.len() {
+                    pattern[idx] = Operational;
+                }
+
+                group_idx += 1;
+            }
+            Operational => {}
+            Unknown => break
+        }
+
+        idx += 1;
+    }
+
+    pattern
+}
+
 fn main() {
     let mut part1 = 0;
     let mut part2 = 0;
@@ -27,28 +59,25 @@ fn main() {
             .split(',').map(|n| n.parse().unwrap())
             .collect();
 
-        println!("{pattern} => {:?}", groups);
+        let simplified = simplify(pattern.clone(), &groups);
 
-        part1 += SpringGenerator::new(pattern.len(), groups.clone())
-            .filter(|result| pattern.matches(result))
+        println!("{pattern} => {:?}", groups);
+        println!("{simplified}");
+
+        part1 += SpringGenerator::new(&simplified, groups.clone())
             .count();
 
         // Unfold
-        let pattern = pattern.unfold(5);
         let groups = groups.repeat(5);
+        let pattern = simplify(pattern.unfold(5), &groups);
 
         println!("{pattern} => {:?}", groups);
 
-        // part2 += SpringGenerator::new(pattern.len(), groups.clone())
-        //     .filter(|result| pattern.matches(result))
+        // part2 += SpringGenerator::new(&pattern, groups.clone())
         //     .count();
 
-        for result in SpringGenerator::new(pattern.len(), groups) {
-            if result.matches(&pattern) {
-                println!("\x1b[32m{result}\x1b[m");
-            } else {
-                // println!("{result}");
-            }
+        for result in SpringGenerator::new(&pattern, groups) {
+            println!("{result}");
         }
     }
 

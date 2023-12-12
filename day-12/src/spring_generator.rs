@@ -1,9 +1,9 @@
 use std::collections::VecDeque;
 use crate::spring_pattern::SpringPattern;
-use crate::spring_state::SpringState::{Damaged, Operational};
+use crate::spring_state::SpringState::{*};
 
-pub struct SpringGenerator {
-    size: usize,
+pub struct SpringGenerator<'a> {
+    target: &'a SpringPattern,
     groups: Vec<u16>,
     group_sizes: Vec<usize>,
     stack: VecDeque<Node>,
@@ -30,29 +30,49 @@ fn group_sizes(groups: &Vec<u16>) -> Vec<usize> {
     sizes
 }
 
-impl SpringGenerator {
-    pub fn new(size: usize, groups: Vec<u16>) -> Self {
+impl<'a> SpringGenerator<'a> {
+    pub fn new(target: &'a SpringPattern, groups: Vec<u16>) -> Self {
         let mut stack = VecDeque::new();
-        stack.push_back(Node {
-            pattern: SpringPattern::empty(),
-            next_group: 0
-        });
+        let mut pattern = SpringPattern::empty();
+        let mut next_group = 0;
+
+        for idx in 0..target.len() {
+            match target[idx] {
+                Damaged => pattern.push(Damaged),
+                Operational => {
+                    if pattern.len() > 0 && pattern.ends_with(Damaged) {
+                        next_group += 1;
+                    }
+
+                    pattern.push(Operational);
+                },
+                Unknown => break,
+            }
+        }
+
+        println!("Start with \"{pattern}\" {next_group}");
+
+        stack.push_back(Node { pattern, next_group });
 
         let group_sizes = group_sizes(&groups);
 
-        SpringGenerator { size, groups, group_sizes, stack }
+        SpringGenerator { target, groups, group_sizes, stack }
     }
 }
 
-impl Iterator for SpringGenerator {
+impl<'a> Iterator for SpringGenerator<'a> {
     type Item = SpringPattern;
 
     fn next(&mut self) -> Option<Self::Item> {
         loop {
             if let Some(mut node) = self.stack.pop_back() {
-                if node.pattern.len() < self.size {
+                if !node.pattern.start_matches(self.target) {
+                    continue;
+                }
+
+                if node.pattern.len() < self.target.len() {
                     let can_be_damaged = node.pattern.is_empty() || node.pattern.ends_with(Operational);
-                    let can_be_operational = node.pattern.len() + self.group_sizes[node.next_group] <= self.size;
+                    let can_be_operational = node.pattern.len() + self.group_sizes[node.next_group] <= self.target.len();
 
                     if can_be_damaged && node.next_group < self.groups.len() {
                         let mut next = node.pattern.clone();
@@ -71,7 +91,7 @@ impl Iterator for SpringGenerator {
                         node.pattern.push(Operational);
                         self.stack.push_back(node);
                     }
-                } else if node.pattern.len() == self.size && node.next_group == self.groups.len() {
+                } else if node.pattern.len() == self.target.len() && node.next_group == self.groups.len() {
                     return Some(node.pattern);
                 }
             } else {

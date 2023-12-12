@@ -1,4 +1,5 @@
 use std::fmt::{Debug, Display, Formatter};
+use std::ops::{Index, IndexMut};
 use std::str::FromStr;
 use crate::spring_state::SpringState;
 use crate::spring_state::SpringState::{Damaged, Operational, Unknown};
@@ -37,11 +38,7 @@ impl SpringPattern {
         SpringPattern::new(states)
     }
 
-    pub fn matches(&self, other: &Self) -> bool {
-        if self.len() != other.len() {
-            return false;
-        }
-
+    pub fn start_matches(&self, other: &Self) -> bool {
         self.states.iter()
             .zip(other.states.iter())
             .all(|pair| match pair {
@@ -56,6 +53,20 @@ impl SpringPattern {
 
     pub fn len(&self) -> usize {
         self.states.len()
+    }
+}
+
+impl Index<usize> for SpringPattern {
+    type Output = SpringState;
+
+    fn index(&self, index: usize) -> &Self::Output {
+        &self.states[index]
+    }
+}
+
+impl IndexMut<usize> for SpringPattern {
+    fn index_mut(&mut self, index: usize) -> &mut Self::Output {
+        &mut self.states[index]
     }
 }
 
