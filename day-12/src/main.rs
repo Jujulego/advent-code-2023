@@ -61,9 +61,6 @@ fn main() {
 
         let simplified = simplify(pattern.clone(), &groups);
 
-        println!("{pattern} => {:?}", groups);
-        println!("{simplified}");
-
         part1 += SpringGenerator::new(&simplified, groups.clone())
             .count();
 
@@ -71,14 +68,8 @@ fn main() {
         let groups = groups.repeat(5);
         let pattern = simplify(pattern.unfold(5), &groups);
 
-        println!("{pattern} => {:?}", groups);
-
-        // part2 += SpringGenerator::new(&pattern, groups.clone())
-        //     .count();
-
-        for result in SpringGenerator::new(&pattern, groups) {
-            println!("{result}");
-        }
+        part2 += SpringGenerator::new(&pattern, groups.clone())
+            .count();
     }
 
     println!("part 1: {part1}");
