@@ -107,6 +107,7 @@ fn main() {
 
         let mut is_in = false;
         let mut pipe_sum = 0;
+        print!("\x1b[32;44m");
 
         for (x, &pipe) in row.iter().enumerate() {
             let x = x as i16;
@@ -115,15 +116,23 @@ fn main() {
             if is_pipe {
                 pipe_sum |= pipe as u8;
 
-                print!("{}", match pipe {
-                    Pipe::None => ".",
-                    Pipe::Horizontal => "─",
-                    Pipe::Vertical => "│",
-                    Pipe::UpLeft => "┘",
-                    Pipe::UpRight => "└",
-                    Pipe::DownLeft => "┐",
-                    Pipe::DownRight => "┌",
-                });
+                if is_in {
+                    print!("{}", match pipe {
+                        Pipe::Horizontal => if pipe_sum & UP == UP { "▄" } else { "▀" },
+                        Pipe::Vertical => "▌",
+                        Pipe::UpRight => "▙",
+                        Pipe::DownRight => "▛",
+                        _ => "",
+                    });
+                } else {
+                    print!("{}", match pipe {
+                        Pipe::Horizontal => if pipe_sum & UP == UP { "▀" } else { "▄" },
+                        Pipe::Vertical => "▐",
+                        Pipe::UpRight => "▝",
+                        Pipe::DownRight => "▗",
+                        _ => "",
+                    });
+                }
 
                 if pipe as u8 & RIGHT == 0 {
                     if (pipe_sum & UP == UP) && (pipe_sum & DOWN == DOWN) {
@@ -132,16 +141,30 @@ fn main() {
 
                     pipe_sum = 0;
                 }
+
+                if is_in {
+                    print!("{}", match pipe {
+                        Pipe::UpLeft => "▟",
+                        Pipe::DownLeft => "▜",
+                        _ => "",
+                    });
+                } else {
+                    print!("{}", match pipe {
+                        Pipe::UpLeft => "▘",
+                        Pipe::DownLeft => "▖",
+                        _ => "",
+                    });
+                }
             } else {
                 if is_in {
                     cnt_in += 1;
                 }
 
-                print!("{}", if is_in { "\x1b[32mx\x1b[m" } else { "\x1b[34mo\x1b[m" });
+                print!("{}", if is_in { "█" } else { " " });
             }
         }
 
-        println!();
+        println!("\x1b[m");
     }
 
     println!("part 2: {cnt_in}");
