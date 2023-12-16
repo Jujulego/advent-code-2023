@@ -1,7 +1,8 @@
 extern crate nalgebra as na;
 
+use std::cmp::max;
 use std::collections::{HashSet, VecDeque};
-use na::{point, vector};
+use na::{point, Point2, vector};
 use crate::Direction::*;
 
 #[derive(Copy, Clone, Debug, Eq, Hash, PartialEq)]
@@ -31,17 +32,12 @@ fn opposite(dir: &Direction) -> Direction {
     }
 }
 
-fn main() {
-    // Load tiles
-    let tiles: Vec<Vec<char>> = read_lines!("day-16/input.txt")
-        .map(|line| line.chars().collect())
-        .collect();
-
+fn energized_from(tiles: &Vec<Vec<char>>, start: Point2<i32>, dir: Direction) -> usize {
     let mut marks = HashSet::new();
     let mut energized = HashSet::new();
     let mut stack = VecDeque::new();
 
-    stack.push_back((point![-1, 0], Right));
+    stack.push_back((start, dir));
 
     while let Some((pos, dir)) = stack.pop_back() {
         let next = match &dir {
@@ -119,5 +115,34 @@ fn main() {
         }
     }
 
-    println!("part 1: {}", energized.len());
+    energized.len()
+}
+
+fn main() {
+    // Load tiles
+    let tiles: Vec<Vec<char>> = read_lines!("day-16/input.txt")
+        .map(|line| line.chars().collect())
+        .collect();
+
+    let mut optimal = 0;
+    let max_y = tiles.len() as i32;
+    let max_x = tiles[0].len() as i32;
+
+    for r in 0..max_y {
+        let cnt = energized_from(&tiles, point![-1, r], Right);
+
+        if r == 0 {
+            println!("part 1: {cnt}");
+        }
+
+        optimal = max(optimal, cnt);
+        optimal = max(optimal, energized_from(&tiles, point![max_x, r], Left));
+    }
+
+    for c in 0..max_x {
+        optimal = max(optimal, energized_from(&tiles, point![c, -1], Down));
+        optimal = max(optimal, energized_from(&tiles, point![c, max_y], Up));
+    }
+
+    println!("part 2: {optimal}");
 }
