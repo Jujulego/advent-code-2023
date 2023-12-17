@@ -46,43 +46,37 @@ fn main() {
     marks.insert((point![0, 0], Right), [0; 3]);
 
     while let Some(step) = queue.pop() {
-        let last = step.moves[2].unwrap_or(Right);
-
         if step.position == target {
             step.path.print();
             println!("part 1: {}", step.heat_loss);
             break;
         }
 
-        for direction in [last.left_turn(), last, last.right_turn()] {
-            let next = step.position + Vector2::from(direction);
+        for direction in step.moves[2].map_or([Down, Right], |dir| [dir.left_turn(), dir.right_turn()]) {
+            let mut next = step.position;
+            let mut heat_loss = step.heat_loss;
 
-            if bbox.contains(&next) {
-                let heat_loss = step.heat_loss + heat_map[next.y as usize][next.x as usize];
-                let strait_cnt = step.moves.into_iter().rev()
-                    .take_while(|&m| m == Some(direction))
-                    .count();
+            for cnt in 0..3 {
+                next += Vector2::from(direction);
 
-                if strait_cnt >= 3 {
+                if !bbox.contains(&next) {
                     continue;
                 }
 
+                heat_loss += heat_map[next.y as usize][next.x as usize];
+
                 if let Some(heats) = marks.get_mut(&(next, direction)) {
-                    if heats[strait_cnt] <= heat_loss {
+                    if heats[cnt] <= heat_loss {
                         continue;
                     } else {
-                        heats[strait_cnt] = heat_loss
+                        heats[cnt] = heat_loss
                     }
                 } else {
                     let mut heats = [u32::MAX; 3];
-                    heats[strait_cnt] = heat_loss;
+                    heats[cnt] = heat_loss;
 
                     marks.insert((next, direction), heats);
                 }
-
-                // if step.path.is_child_of(&next) {
-                //     continue;
-                // }
 
                 queue.push(Step {
                     position: next,
@@ -90,8 +84,6 @@ fn main() {
                     moves: [step.moves[1], step.moves[2], Some(direction)],
                     path: Rc::new(Tree::Node(next, step.path.clone()))
                 });
-
-                // println!("{} => {next} ({heat_loss} {strait_cnt})", step.position);
             }
         }
     }
