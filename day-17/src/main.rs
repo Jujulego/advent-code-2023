@@ -32,7 +32,7 @@ fn main() {
 
     // Djikstra
     let mut queue = BinaryHeap::new();
-    let mut marks: HashMap<(Point2<i32>, Direction), [u32; 3]> = HashMap::new();
+    let mut marks: HashMap<(Point2<i32>, Direction), [u32; 10]> = HashMap::new();
 
     queue.push(Step {
         position: point![0, 0],
@@ -40,10 +40,10 @@ fn main() {
         moves: [None, None, None],
         path: Rc::new(Tree::Root(point![0, 0])),
     });
-    marks.insert((point![0, 0], Up), [0; 3]);
-    marks.insert((point![0, 0], Left), [0; 3]);
-    marks.insert((point![0, 0], Down), [0; 3]);
-    marks.insert((point![0, 0], Right), [0; 3]);
+    marks.insert((point![0, 0], Up), [0; 10]);
+    marks.insert((point![0, 0], Left), [0; 10]);
+    marks.insert((point![0, 0], Down), [0; 10]);
+    marks.insert((point![0, 0], Right), [0; 10]);
 
     while let Some(step) = queue.pop() {
         if step.position == target {
@@ -56,14 +56,18 @@ fn main() {
             let mut next = step.position;
             let mut heat_loss = step.heat_loss;
 
-            for cnt in 0..3 {
+            for cnt in 0..10 {
                 next += Vector2::from(direction);
 
                 if !bbox.contains(&next) {
-                    continue;
+                    break;
                 }
 
                 heat_loss += heat_map[next.y as usize][next.x as usize];
+
+                if cnt < 3 {
+                    continue;
+                }
 
                 if let Some(heats) = marks.get_mut(&(next, direction)) {
                     if heats[cnt] <= heat_loss {
@@ -72,7 +76,7 @@ fn main() {
                         heats[cnt] = heat_loss
                     }
                 } else {
-                    let mut heats = [u32::MAX; 3];
+                    let mut heats = [u32::MAX; 10];
                     heats[cnt] = heat_loss;
 
                     marks.insert((next, direction), heats);
