@@ -1,11 +1,14 @@
 use std::collections::{BinaryHeap, HashMap};
+use std::rc::Rc;
 use nalgebra::{point, Point2, Vector2};
 use step::Step;
 use crate::direction::Direction;
-use crate::direction::Direction::{Down, Right};
+use crate::direction::Direction::{Down, Left, Right, Up};
+use crate::tree::Tree;
 
 mod step;
 mod direction;
+mod tree;
 
 const ZERO: u32 = '0' as u32;
 
@@ -19,25 +22,6 @@ macro_rules! read_lines {
     };
 }
 
-fn is_strait_line(mut from: Point2<i32>, direction: Direction, previous_map: &HashMap<Point2<i32>, Point2<i32>>) -> bool {
-    let mut cnt = 0;
-
-    while let Some(&previous) = previous_map.get(&from) {
-        if previous == (from - Vector2::from(direction)) {
-            from = previous;
-            cnt += 1;
-
-            if cnt > 2 {
-                return true
-            }
-        } else {
-            break;
-        }
-    }
-
-    false
-}
-
 fn main() {
     let heat_map: Vec<Vec<u32>> = read_lines!("day-17/input.txt")
         .map(|line| line.chars().map(|c| (c as u32) - ZERO).collect())
@@ -48,19 +32,24 @@ fn main() {
 
     // Djikstra
     let mut queue = BinaryHeap::new();
-    let mut marks = HashMap::new();
-    let mut previous_map = HashMap::new();
+    let mut marks: HashMap<(Point2<i32>, Direction), [u32; 3]> = HashMap::new();
 
     queue.push(Step {
         position: point![0, 0],
         heat_loss: 0,
-        moves: [None, None, Some(Right)],
+        moves: [None, None, None],
+        path: Rc::new(Tree::Root(point![0, 0])),
     });
+    marks.insert((point![0, 0], Up), [0; 3]);
+    marks.insert((point![0, 0], Left), [0; 3]);
+    marks.insert((point![0, 0], Down), [0; 3]);
+    marks.insert((point![0, 0], Right), [0; 3]);
 
     while let Some(step) = queue.pop() {
         let last = step.moves[2].unwrap_or(Right);
 
         if step.position == target {
+            step.path.print();
             println!("part 1: {}", step.heat_loss);
             break;
         }
@@ -68,42 +57,42 @@ fn main() {
         for direction in [last.left_turn(), last, last.right_turn()] {
             let next = step.position + Vector2::from(direction);
 
-            if step.moves.iter().all(|&m| m == Some(direction)) {
-                continue;
-            }
-
             if bbox.contains(&next) {
                 let heat_loss = step.heat_loss + heat_map[next.y as usize][next.x as usize];
+                let strait_cnt = step.moves.into_iter().rev()
+                    .take_while(|&m| m == Some(direction))
+                    .count();
 
-                if marks.get(&next).unwrap_or(&u32::MAX) < &heat_loss {
+                if strait_cnt >= 3 {
                     continue;
                 }
 
-                marks.insert(next, heat_loss);
-                previous_map.insert(next, step.position);
+                if let Some(heats) = marks.get_mut(&(next, direction)) {
+                    if heats[strait_cnt] <= heat_loss {
+                        continue;
+                    } else {
+                        heats[strait_cnt] = heat_loss
+                    }
+                } else {
+                    let mut heats = [u32::MAX; 3];
+                    heats[strait_cnt] = heat_loss;
+
+                    marks.insert((next, direction), heats);
+                }
+
+                // if step.path.is_child_of(&next) {
+                //     continue;
+                // }
 
                 queue.push(Step {
                     position: next,
                     heat_loss,
-                    moves: [step.moves[1], step.moves[2], Some(direction)]
+                    moves: [step.moves[1], step.moves[2], Some(direction)],
+                    path: Rc::new(Tree::Node(next, step.path.clone()))
                 });
 
-                println!("{} => {next} ({heat_loss})", step.position);
+                // println!("{} => {next} ({heat_loss} {strait_cnt})", step.position);
             }
         }
-    }
-
-    for y in 0..=target.y {
-        for x in 0..=target.x {
-            let pos = point![x, y];
-
-            if let Some(prev) = previous_map.get(&pos) {
-                print!("{}", Direction::from(pos - prev));
-            } else {
-                print!(" ");
-            }
-        }
-
-        println!();
     }
 }
