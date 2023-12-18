@@ -2,9 +2,11 @@ use std::collections::{BTreeSet};
 use itertools::Itertools;
 use nalgebra::{point, Point2};
 use crate::command::Command;
+use crate::hex_command::HexCommand;
 
 mod command;
 mod direction;
+mod hex_command;
 
 macro_rules! read_lines {
     ($file:literal) => {
@@ -19,7 +21,7 @@ macro_rules! read_lines {
 fn main() {
     // Load polygon
     let polygon: Vec<Point2<i32>> = read_lines!("day-18/input.txt")
-        .map(|line| line.parse::<Command>().unwrap())
+        .map(|line| line.parse::<HexCommand>().unwrap())
         .scan(point![0, 0], |pt, cmd| {
             *pt += cmd.vector();
             Some(*pt)
@@ -38,20 +40,20 @@ fn main() {
     let mut columns = BTreeSet::new();
     let mut idx = 0;
 
-    let mut area = 0;
+    let mut area: i64 = 0;
 
     while idx < sorted.len() {
         let row = sorted[idx].y;
 
         // Compute area for known columns
-        let dy = row - previous_row - 1;
+        let dy = (row - previous_row - 1) as i64;
         previous_row = row;
 
         for pair in &columns.iter().chunks(2) {
             let (a, b) = pair.collect_tuple().unwrap();
             println!("+ {} x {dy}", b - a + 1);
 
-            area += (b - a + 1) * dy;
+            area += (b - a + 1) as i64 * dy;
         }
 
         // Update columns
@@ -89,7 +91,7 @@ fn main() {
 
             if !was_in && !is_in {
                 println!("+ {}", c - from + 1);
-                area += c - from + 1;
+                area += (c - from + 1) as i64;
             }
         }
     }
