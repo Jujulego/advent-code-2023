@@ -1,11 +1,13 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, VecDeque};
 use crate::part::Part;
-use crate::rule::RuleResult::{Accepted, Target};
+use crate::part_range::PartRange;
+use crate::rule::RuleResult::{Accepted, Target, Refused};
 use crate::workflow::Workflow;
 
 mod part;
 mod rule;
 mod workflow;
+mod part_range;
 
 macro_rules! read_lines {
     ($file:literal) => {
@@ -53,4 +55,25 @@ fn main() {
     }
 
     println!("part 1: {part1}");
+
+    // Process part range
+    let mut queue = VecDeque::new();
+    let mut part2 = 0;
+
+    queue.push_back((PartRange::new(), &start));
+
+    while let Some((range, result)) = queue.pop_front() {
+        match result {
+            Accepted => {
+                println!("accepted {:?} => {}", range, range.size());
+                part2 += range.size();
+            },
+            Refused => {},
+            Target(workflow) => {
+                queue.extend(workflows.get(workflow).unwrap().process_range(range));
+            }
+        }
+    }
+
+    println!("part 2: {part2}");
 }

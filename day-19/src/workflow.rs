@@ -1,5 +1,6 @@
 use std::str::FromStr;
 use crate::part::Part;
+use crate::part_range::PartRange;
 use crate::rule::{Rule, RuleResult};
 use crate::rule::RuleResult::{Accepted, Refused, Target};
 
@@ -14,6 +15,30 @@ impl Workflow {
         self.rules.iter()
             .filter_map(|rule| rule.process(part))
             .next().unwrap_or(&self.result)
+    }
+
+    pub fn process_range(&self, mut part_range: PartRange) -> Vec<(PartRange, &RuleResult)> {
+        let range = &mut part_range;
+
+        let mut ranges: Vec<(PartRange, &RuleResult)> = self.rules.iter()
+            .scan(range, |range, rule| {
+                if range.is_empty() {
+                    None
+                } else {
+                    let (pass, rest) = rule.process_range(range);
+                    **range = rest;
+
+                    Some((pass, &rule.result))
+                }
+            })
+            .filter(|(range, _)| !range.is_empty())
+            .collect();
+
+        if !part_range.is_empty() {
+            ranges.push((part_range, &self.result));
+        }
+
+        ranges
     }
 }
 

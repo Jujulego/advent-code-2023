@@ -1,6 +1,7 @@
 use std::cmp::Ordering;
 use std::str::FromStr;
 use crate::part::{Part, PartNote};
+use crate::part_range::PartRange;
 use crate::rule::RuleResult::{Accepted, Refused, Target};
 
 #[derive(Debug, Eq, PartialEq)]
@@ -24,6 +25,18 @@ impl Rule {
             Some(&self.result)
         } else {
             None
+        }
+    }
+    
+    pub fn process_range(&self, part_range: &PartRange) -> (PartRange, PartRange) {
+
+        match self.ordering {
+            Ordering::Less => part_range.split(&self.note, self.threshold),
+            Ordering::Equal => panic!("This does not exists !"),
+            Ordering::Greater => {
+                let split = part_range.split(&self.note, self.threshold + 1);
+                (split.1, split.0)
+            }
         }
     }
 }
