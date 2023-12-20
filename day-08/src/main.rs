@@ -1,4 +1,5 @@
 use std::collections::{HashMap, HashSet};
+use num::Integer;
 
 macro_rules! read_lines {
     ($file:literal) => {
@@ -61,7 +62,7 @@ fn main() {
 
     // Follow path
     let position: Vec<&String> = nodes.keys().filter(|n| n.ends_with('A')).collect();
-    let mut factors: HashSet<usize> = HashSet::new();
+    let mut part2: usize = 1;
 
     for pos in position {
         let (_, cnt) = count_steps(pos, &moves, &nodes);
@@ -70,12 +71,8 @@ fn main() {
             println!("part 1: {cnt}");
         }
 
-        for f in factorize(cnt) {
-            factors.insert(f);
-        }
+        part2 = part2.lcm(&cnt);
     }
-
-    let part2: usize = factors.iter().product();
 
     println!("part 2: {part2}");
 }

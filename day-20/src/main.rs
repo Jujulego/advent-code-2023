@@ -1,4 +1,5 @@
 use std::collections::{HashMap, VecDeque};
+use num::Integer;
 use crate::broadcast::Broadcast;
 use crate::conjunction::Conjunction;
 use crate::flip_flop::FlipFlop;
@@ -115,5 +116,5 @@ fn main() {
     }
 
     println!("part 1: {}", low_cnt * high_cnt);
-    println!("part 2: {:?}", last_rhythms.values().filter_map(|&o| o).reduce(|acc, v| acc * v));
+    println!("part 2: {:?}", last_rhythms.values().filter_map(|&o| o).reduce(|acc, v| acc.lcm(&v)));
 }
