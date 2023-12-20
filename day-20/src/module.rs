@@ -5,10 +5,21 @@ use crate::pulse::Pulse;
 use crate::pulse_processor::PulseProcessor;
 use crate::pulse_targets::PulseTargets;
 
+#[derive(Debug)]
 pub enum Module {
     FlipFlop(FlipFlop),
     Conjunction(Conjunction),
     Broadcast(Broadcast),
+}
+
+impl Module {
+    pub fn is_conjunction(&self) -> bool {
+        if let Module::Conjunction(_) = self {
+            true
+        } else {
+            false
+        }
+    }
 }
 
 impl PulseProcessor for &mut Module {

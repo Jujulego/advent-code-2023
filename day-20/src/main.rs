@@ -72,18 +72,28 @@ fn main() {
 
     // Process pulses
     let mut queue = VecDeque::new();
+    let mut index = 0;
     let mut low_cnt = 0;
     let mut high_cnt = 0;
 
-    for _ in 0..1000 {
+    let mut last_rhythms: HashMap<String, Option<u64>> = HashMap::new();
+
+    for origin in inverted.get(&inverted.get("rx").unwrap()[0]).unwrap() {
+        last_rhythms.insert(origin.to_string(), None);
+    }
+
+    'main: loop {
         queue.push_back(("button".to_string(), Pulse::Low, "broadcaster".to_string()));
+        index += 1;
 
         while let Some((origin, pulse, target)) = queue.pop_front() {
-            println!("{origin} -{pulse}> {target}");
+            //println!("{origin} -{pulse}> {target}");
 
-            match pulse {
-                Pulse::Low => low_cnt += 1,
-                Pulse::High => high_cnt += 1,
+            if index <= 1000 {
+                match pulse {
+                    Pulse::Low => low_cnt += 1,
+                    Pulse::High => high_cnt += 1,
+                }
             }
 
             if let Some(module) = modules.get_mut(&target) {
@@ -91,8 +101,19 @@ fn main() {
                     queue.extend(module.targets().iter().map(|next| (target.clone(), result, next.clone())));
                 }
             }
+
+            if target == "hf" && pulse == Pulse::High {
+                if last_rhythms.get(&origin).unwrap().is_none() {
+                    last_rhythms.insert(origin, Some(index));
+
+                    if last_rhythms.values().filter_map(|&o| o).count() == last_rhythms.len() {
+                        break 'main;
+                    }
+                }
+            }
         }
     }
 
     println!("part 1: {}", low_cnt * high_cnt);
+    println!("part 2: {:?}", last_rhythms.values().filter_map(|&o| o).reduce(|acc, v| acc * v));
 }
