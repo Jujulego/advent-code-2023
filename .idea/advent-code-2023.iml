@@ -22,6 +22,7 @@
       <sourceFolder url="file://$MODULE_DIR$/day-17/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/day-18/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/day-19/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/day-20/src" isTestSource="false" />
       <excludeFolder url="file://$MODULE_DIR$/advent-code-2023/target" />
       <excludeFolder url="file://$MODULE_DIR$/day-01/target" />
       <excludeFolder url="file://$MODULE_DIR$/day-02/target" />
