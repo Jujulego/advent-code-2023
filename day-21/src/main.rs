@@ -1,7 +1,7 @@
 use std::collections::{HashMap, VecDeque};
 use nalgebra::{point, Point2};
 
-const STEPS: usize = 26501365;
+const STEPS: usize = 64;
 
 macro_rules! read_lines {
     ($file:literal) => {
@@ -11,14 +11,6 @@ macro_rules! read_lines {
             std::io::BufRead::lines(buffer).map(|line| line.unwrap())
         }
     };
-}
-
-fn wrap(mut v: i64, len: usize) -> usize {
-    while v < 0 {
-        v += len as i64;
-    }
-
-    v as usize % len
 }
 
 fn main() {
@@ -33,14 +25,14 @@ fn main() {
     for (y, line) in map.iter().enumerate() {
         for (x, char) in line.iter().enumerate() {
             if char == &'S' {
-                start = point![x as i64, y as i64];
+                start = point![x, y];
             }
         }
     }
 
     // Walk !
-    let mut distances: HashMap<Point2<i64>, usize> = HashMap::new();
-    let mut queue: VecDeque<(Point2<i64>, usize)> = VecDeque::new();
+    let mut distances: HashMap<Point2<usize>, usize> = HashMap::new();
+    let mut queue: VecDeque<(Point2<usize>, usize)> = VecDeque::new();
 
     queue.push_back((start, 0));
 
@@ -53,9 +45,7 @@ fn main() {
             continue;
         }
 
-        if map.get(wrap(pt.y, map.len()))
-            .and_then(|row| row.get(wrap(pt.x, row.len())))
-            .unwrap_or(&'#') == &'#' {
+        if map.get(pt.y).and_then(|row| row.get(pt.x)).unwrap_or(&'#') == &'#' {
             continue;
         }
 
